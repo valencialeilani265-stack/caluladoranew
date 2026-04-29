@@ -1,123 +1,85 @@
 import streamlit as st
-import math
+import re
 
-st.set_page_config(page_title="Calculadora Pro", page_icon="📱", layout="centered")
+st.set_page_config(page_title="Formulario Pro", page_icon="📋", layout="centered")
 
 # ---- ESTILO ----
 st.markdown("""
 <style>
 .stApp { background-color: #000000; }
-.block-container { max-width: 400px !important; padding-top: 2rem !important; }
+.block-container { max-width: 500px !important; padding-top: 2rem !important; }
 
-.display {
+.title {
     color: white;
-    font-size: 70px;
-    text-align: right;
-    min-height: 100px;
+    font-size: 40px;
+    text-align: center;
     margin-bottom: 20px;
 }
 
+.stTextInput input, .stTextArea textarea {
+    background-color: #1c1c1c !important;
+    color: white !important;
+    border-radius: 10px !important;
+}
+
 .stButton > button {
-    border-radius: 50% !important;
-    width: 75px !important;
-    height: 75px !important;
-    font-size: 22px !important;
-    margin: 4px auto !important;
+    border-radius: 10px !important;
+    width: 100% !important;
+    height: 50px !important;
+    font-size: 18px !important;
     color: white !important;
     background-color: #ff9f0a !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ---- ESTADO ----
-if "current" not in st.session_state:
-    st.session_state.current = "0"
+# ---- TÍTULO ----
+st.markdown('<div class="title">📋 Formulario de Registro</div>', unsafe_allow_html=True)
 
-if "stored" not in st.session_state:
-    st.session_state.stored = None
+# ---- FORMULARIO ----
+with st.form("formulario"):
+    nombre = st.text_input("Nombre completo")
+    email = st.text_input("Correo electrónico")
+    edad = st.number_input("Edad", min_value=0, max_value=120, step=1)
+    mensaje = st.text_area("Mensaje")
 
-if "op" not in st.session_state:
-    st.session_state.op = None
+    aceptar = st.checkbox("Acepto los términos y condiciones")
 
+    submit = st.form_submit_button("Enviar")
 
-# ---- CALCULO ----
-def operar(a, b, op):
-    a, b = float(a), float(b)
-    try:
-        if op == "+":
-            return a + b
-        elif op == "-":
-            return a - b
-        elif op == "×":
-            return a * b
-        elif op == "÷":
-            return a / b if b != 0 else "Error"
-    except:
-        return "Error"
+# ---- VALIDACIONES ----
+def email_valido(email):
+    patron = r'^[\w\.-]+@[\w\.-]+\.\w+$'
+    return re.match(patron, email)
 
+# ---- RESULTADO ----
+if submit:
+    errores = []
 
-# ---- BOTONES ----
-def click(label):
-    cur = st.session_state.current
+    if not nombre:
+        errores.append("El nombre es obligatorio")
+    if not email or not email_valido(email):
+        errores.append("Correo inválido")
+    if edad < 1:
+        errores.append("Edad no válida")
+    if not aceptar:
+        errores.append("Debes aceptar los términos")
 
-    if label == "AC":
-        st.session_state.current = "0"
-        st.session_state.stored = None
-        st.session_state.op = None
-
-    elif label == "⌫":
-        st.session_state.current = cur[:-1] if len(cur) > 1 else "0"
-
-    elif label in ["+", "-", "×", "÷"]:
-        st.session_state.stored = cur
-        st.session_state.op = label
-        st.session_state.current = "0"
-
-    elif label == "=":
-        if st.session_state.op:
-            res = operar(st.session_state.stored, cur, st.session_state.op)
-            st.session_state.current = str(res)
-            st.session_state.op = None
-
-    # ---- FUNCIONES ----
-    elif label == "%":
-        st.session_state.current = str(float(cur) / 100)
-
-    elif label == "√":
-        try:
-            st.session_state.current = str(math.sqrt(float(cur)))
-        except:
-            st.session_state.current = "Error"
-
-    elif label == "x²":
-        st.session_state.current = str(float(cur) ** 2)
-
-    elif label == "x³":
-        st.session_state.current = str(float(cur) ** 3)
-
-    # ---- NUMEROS ----
+    if errores:
+        for e in errores:
+            st.error(e)
     else:
-        if cur == "0":
-            st.session_state.current = label
-        else:
-            if len(cur) < 12:
-                st.session_state.current += label
+        st.success("✅ Formulario enviado correctamente")
 
+        st.markdown("### 📄 Resumen")
+        st.write(f"**Nombre:** {nombre}")
+        st.write(f"**Correo:** {email}")
+        st.write(f"**Edad:** {edad}")
+        st.write(f"**Mensaje:** {mensaje if mensaje else 'Sin mensaje'}")
 
-# ---- DISPLAY ----
-st.markdown(f'<div class="display">{st.session_state.current}</div>', unsafe_allow_html=True)
+        # Simulación de guardado
+        st.info("Datos guardados (simulado)")
 
-# ---- LAYOUT ----
-filas = [
-    ["AC", "⌫", "%", "÷"],
-    ["7", "8", "9", "×"],
-    ["4", "5", "6", "-"],
-    ["1", "2", "3", "+"],
-    ["0", ".", "=", "√"],
-    ["x²", "x³"]
-]
-
-for i, fila in enumerate(filas):
-    cols = st.columns(len(fila))
-    for j, label in enumerate(fila):
-        cols[j].button(label, key=f"{i}-{j}", on_click=click, args=(label,))
+# ---- EXTRA ----
+st.markdown("---")
+st.caption("App creada con Streamlit 🚀")
